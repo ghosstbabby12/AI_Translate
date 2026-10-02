@@ -30,6 +30,17 @@ services:
     dockerCommand: node dist/worker.js
     envVars: *comunes
 
+  - type: web
+    name: traductor-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - { key: VITE_API_URL, sync: false } # URL pública de traductor-api
+    routes:
+      - { type: rewrite, source: /*, destination: /index.html }
+
   - type: keyvalue
     name: traductor-redis
     ipAllowList: []
