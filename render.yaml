@@ -1,0 +1,39 @@
+# Blueprint de Render: API + worker + Postgres + Redis (Key Value).
+# El almacenamiento de video va en S3 o Cloudflare R2 (Render no ofrece object storage).
+# Los valores con sync: false se cargan a mano en el dashboard; nunca van en el repo.
+services:
+  - type: web
+    name: traductor-api
+    runtime: docker
+    rootDir: backend
+    dockerCommand: node dist/server.js
+    preDeployCommand: node dist/db/migrate.js
+    healthCheckPath: /salud
+    envVars: &comunes
+      - key: DATABASE_URL
+        fromDatabase: { name: traductor-db, property: connectionString }
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: traductor-redis, property: connectionString }
+      - { key: S3_BUCKET, sync: false }
+      - { key: S3_REGION, sync: false }
+      - { key: S3_ENDPOINT, sync: false }
+      - { key: AWS_ACCESS_KEY_ID, sync: false }
+      - { key: AWS_SECRET_ACCESS_KEY, sync: false }
+      - { key: OPENAI_API_KEY, sync: false }
+      - { key: ANTHROPIC_API_KEY, sync: false }
+      - { key: CORS_ORIGIN, sync: false }
+
+  - type: worker
+    name: traductor-worker
+    runtime: docker
+    rootDir: backend
+    dockerCommand: node dist/worker.js
+    envVars: *comunes
+
+  - type: keyvalue
+    name: traductor-redis
+    ipAllowList: []
+    maxmemoryPolicy: noeviction # BullMQ no debe perder jobs
+
+databases:
+  - name: traductor-db

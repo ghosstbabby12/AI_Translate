@@ -1,0 +1,60 @@
+# Entorno local completo: docker compose up --build
+# Requiere backend/.env con OPENAI_API_KEY y ANTHROPIC_API_KEY (ver .env.example).
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: traductor
+      POSTGRES_PASSWORD: traductor
+      POSTGRES_DB: traductor
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U traductor"]
+      interval: 5s
+
+  redis:
+    image: redis:7
+    ports: ["6379:6379"]
+
+  # S3 local
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports: ["9000:9000", "9001:9001"]
+    volumes: [miniodata:/data]
+
+  crear-bucket:
+    image: minio/mc
+    depends_on: [minio]
+    entrypoint: >
+      sh -c "until mc alias set local http://minio:9000 minioadmin minioadmin; do sleep 1; done &&
+             mc mb --ignore-existing local/traductor-videos"
+
+  api:
+    build: ./backend
+    command: sh -c "node dist/db/migrate.js && node dist/server.js"
+    env_file: ./backend/.env
+    environment: &entorno_docker
+      DATABASE_URL: postgres://traductor:traductor@postgres:5432/traductor
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+    ports: ["3000:3000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_started }
+      crear-bucket: { condition: service_completed_successfully }
+
+  worker:
+    build: ./backend
+    command: node dist/worker.js
+    env_file: ./backend/.env
+    environment: *entorno_docker
+    depends_on: [api]
+
+volumes:
+  pgdata:
+  miniodata:
