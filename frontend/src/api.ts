@@ -61,6 +61,7 @@ export interface EstadoRespuesta {
 }
 
 // Sin login todavía: cada navegador recibe un id estable (ver middleware usuario.ts).
+let idSesion: string | undefined;
 function usuarioId(): string {
   const CLAVE = "traductor.usuarioId";
   try {
@@ -72,10 +73,9 @@ function usuarioId(): string {
     return id;
   } catch {
     // localStorage bloqueado (modo privado estricto): id solo para esta sesión
-    return (usuarioId.temporal ??= crypto.randomUUID());
+    return (idSesion ??= crypto.randomUUID());
   }
 }
-usuarioId.temporal = undefined as string | undefined;
 
 export class ErrorApi extends Error {
   constructor(
