@@ -30,8 +30,12 @@ export function VistaVideo({ id }: { id: string }) {
   };
 
   const reintentar = async () => {
-    const { reencolados } = await api.reintentar(id);
-    setAccion(`${reencolados} segmento${reencolados === 1 ? "" : "s"} en cola de nuevo`);
+    try {
+      const r = await api.reintentar(id);
+      setAccion(r.video ? "Video en cola de nuevo" : `${r.reencolados} segmento${r.reencolados === 1 ? "" : "s"} en cola de nuevo`);
+    } catch (e) {
+      setAccion(e instanceof Error ? e.message : String(e));
+    }
     reiniciar();
   };
 
@@ -71,10 +75,17 @@ export function VistaVideo({ id }: { id: string }) {
             <button type="button" onClick={() => descargar("vtt")} disabled={estado.progreso.listos === 0}>
               Descargar .vtt
             </button>
-            {estado.progreso.errores > 0 && estado.estado !== "procesando" && (
+            {estado.estado === "error" && estado.progreso.total === 0 ? (
               <button type="button" className="secundario" onClick={reintentar}>
-                Reintentar segmentos fallidos
+                Reintentar video
               </button>
+            ) : (
+              estado.progreso.errores > 0 &&
+              estado.estado !== "procesando" && (
+                <button type="button" className="secundario" onClick={reintentar}>
+                  Reintentar segmentos fallidos
+                </button>
+              )
             )}
           </div>
           {accion && <p className="sutil">{accion}</p>}

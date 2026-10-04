@@ -107,7 +107,7 @@ export const api = {
   estado: (id: string, signal?: AbortSignal) => json<EstadoRespuesta>(`/videos/${id}/estado`, { signal }),
   subtitulosVtt: async (id: string, signal?: AbortSignal) =>
     (await pedir(`/videos/${id}/subtitulos?formato=vtt`, { signal })).text(),
-  reintentar: (id: string) => json<{ reencolados: number }>(`/videos/${id}/reintentar`, { method: "POST" }),
+  reintentar: (id: string) => json<{ reencolados: number; video?: boolean }>(`/videos/${id}/reintentar`, { method: "POST" }),
 
   crearDesdeUrl: (url: string, idiomaDestino: string) =>
     json<Video>("/videos", {
