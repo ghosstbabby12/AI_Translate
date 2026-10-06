@@ -60,20 +60,46 @@ export interface EstadoRespuesta {
   segmentos: SegmentoEstado[];
 }
 
-// Sin login todavía: cada navegador recibe un id estable (ver middleware usuario.ts).
-let idSesion: string | undefined;
-function usuarioId(): string {
-  const CLAVE = "traductor.usuarioId";
+export interface Usuario {
+  id: string;
+  nombre: string;
+  email: string;
+  creado_en: string;
+}
+
+export interface Sesion {
+  token: string;
+  usuario: Usuario;
+}
+
+// Token de la sesión actual; lo administra auth.tsx.
+let token: string | null = null;
+let alExpirar: () => void = () => {};
+
+export function configurarSesion(nuevo: string | null, onExpira?: () => void) {
+  token = nuevo;
+  if (onExpira) alExpirar = onExpira;
+}
+
+const cabeceraAuth = (): Record<string, string> => (token ? { Authorization: `Bearer ${token}` } : {});
+
+/**
+ * Id anónimo que usaba la app antes del login. Se envía una vez al iniciar
+ * sesión para que los videos subidos sin cuenta pasen a la cuenta.
+ */
+const CLAVE_ANONIMO = "traductor.usuarioId";
+function usuarioAnonimo(): string | undefined {
   try {
-    let id = localStorage.getItem(CLAVE);
-    if (!id) {
-      id = crypto.randomUUID();
-      localStorage.setItem(CLAVE, id);
-    }
-    return id;
+    return localStorage.getItem(CLAVE_ANONIMO) ?? undefined;
   } catch {
-    // localStorage bloqueado (modo privado estricto): id solo para esta sesión
-    return (idSesion ??= crypto.randomUUID());
+    return undefined;
+  }
+}
+function olvidarAnonimo() {
+  try {
+    localStorage.removeItem(CLAVE_ANONIMO);
+  } catch {
+    /* sin almacenamiento */
   }
 }
 
@@ -89,8 +115,10 @@ export class ErrorApi extends Error {
 async function pedir(ruta: string, init: RequestInit = {}): Promise<Response> {
   const res = await fetch(`${BASE}${ruta}`, {
     ...init,
-    headers: { "X-Usuario-Id": usuarioId(), ...init.headers },
+    headers: { ...cabeceraAuth(), ...init.headers },
   });
+  // Token vencido o inválido: se cierra la sesión (salvo en el propio login)
+  if (res.status === 401 && token) alExpirar();
   if (!res.ok) {
     const cuerpo = await res.json().catch(() => null);
     throw new ErrorApi(cuerpo?.error ?? `Error ${res.status}`, res.status);
@@ -100,7 +128,22 @@ async function pedir(ruta: string, init: RequestInit = {}): Promise<Response> {
 
 const json = async <T,>(ruta: string, init?: RequestInit) => (await pedir(ruta, init)).json() as Promise<T>;
 
+async function acceder(ruta: string, datos: Record<string, string>): Promise<Sesion> {
+  const sesion = await json<Sesion>(ruta, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...datos, usuario_anonimo: usuarioAnonimo() }),
+  });
+  olvidarAnonimo();
+  return sesion;
+}
+
 export const api = {
+  login: (email: string, password: string) => acceder("/auth/login", { email, password }),
+  registro: (nombre: string, email: string, password: string) =>
+    acceder("/auth/registro", { nombre, email, password }),
+  yo: () => json<Usuario>("/auth/yo"),
+
   idiomas: () => json<Idioma[]>("/idiomas"),
   listarVideos: () => json<VideoHistorial[]>("/videos"),
   obtenerVideo: (id: string, signal?: AbortSignal) => json<VideoDetalle>(`/videos/${id}`, { signal }),
@@ -128,7 +171,7 @@ export const api = {
 
       const xhr = new XMLHttpRequest();
       xhr.open("POST", `${BASE}/videos`);
-      xhr.setRequestHeader("X-Usuario-Id", usuarioId());
+      if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
       xhr.upload.onprogress = (e) => e.lengthComputable && onProgreso(e.loaded / e.total);
       xhr.onload = () => {
         let cuerpo: { error?: string } | Video | null = null;
@@ -137,6 +180,7 @@ export const api = {
         } catch {
           /* respuesta no JSON */
         }
+        if (xhr.status === 401 && token) alExpirar();
         if (xhr.status >= 200 && xhr.status < 300) resolve(cuerpo as Video);
         else reject(new ErrorApi((cuerpo as { error?: string })?.error ?? `Error ${xhr.status}`, xhr.status));
       };
