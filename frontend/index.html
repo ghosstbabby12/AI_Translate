@@ -3,7 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
     <title>Traductor de Video con IA</title>
+    <!-- Aplica el tema guardado antes de pintar, para que no parpadee en claro. -->
+    <script>
+      try {
+        var t = localStorage.getItem("traductor.tema");
+        if (t === "oscuro") document.documentElement.dataset.theme = "dark";
+        if (t === "claro") document.documentElement.dataset.theme = "light";
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

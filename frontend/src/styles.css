@@ -1,31 +1,59 @@
+/* ---------- Tema ----------
+   Claro por defecto. Oscuro si:
+     - el usuario lo eligió (data-theme="dark"), o
+     - eligió "sistema" (sin data-theme) y el sistema está en oscuro.
+   data-theme lo pone useTema.ts y, antes de pintar, el script de index.html. */
 :root {
-  --fondo: #f6f7f9;
+  --fondo: #f5f6fa;
   --superficie: #ffffff;
-  --borde: #e2e5ea;
-  --texto: #16181d;
-  --texto-sutil: #5d6573;
-  --acento: #4f46e5;
+  --superficie-2: #f0f2f7;
+  --borde: #e1e4ec;
+  --texto: #14161c;
+  --texto-sutil: #5b6475;
+  --acento: #5145e5;
+  --acento-hover: #4337d1;
   --acento-texto: #ffffff;
-  --listo: #16a34a;
+  --acento-suave: color-mix(in srgb, var(--acento) 12%, transparent);
+  --listo: #15a34a;
   --procesando: #d97706;
-  --pendiente: #cbd2dc;
+  --pendiente: #cdd3de;
   --error: #dc2626;
-  --radio: 10px;
-  color-scheme: light dark;
+  --sombra: 0 1px 2px rgb(16 24 40 / 0.06), 0 4px 16px rgb(16 24 40 / 0.06);
+  --radio: 12px;
+  color-scheme: light;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   line-height: 1.5;
 }
 
+:root[data-theme="dark"] {
+  --fondo: #0d0f14;
+  --superficie: #161920;
+  --superficie-2: #1d212a;
+  --borde: #2a2f3a;
+  --texto: #e9ebf0;
+  --texto-sutil: #9ba3b4;
+  --acento: #8b8cf8;
+  --acento-hover: #a3a4fb;
+  --acento-texto: #0d0f14;
+  --pendiente: #394050;
+  --sombra: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 20px rgb(0 0 0 / 0.35);
+  color-scheme: dark;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
-    --fondo: #0f1115;
-    --superficie: #181b21;
-    --borde: #2a2f38;
-    --texto: #e8eaee;
-    --texto-sutil: #9aa3b2;
-    --acento: #818cf8;
-    --acento-texto: #0f1115;
-    --pendiente: #3a414d;
+  :root:not([data-theme="light"]) {
+    --fondo: #0d0f14;
+    --superficie: #161920;
+    --superficie-2: #1d212a;
+    --borde: #2a2f3a;
+    --texto: #e9ebf0;
+    --texto-sutil: #9ba3b4;
+    --acento: #8b8cf8;
+    --acento-hover: #a3a4fb;
+    --acento-texto: #0d0f14;
+    --pendiente: #394050;
+    --sombra: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 20px rgb(0 0 0 / 0.35);
+    color-scheme: dark;
   }
 }
 
@@ -35,7 +63,10 @@ body {
   margin: 0;
   background: var(--fondo);
   color: var(--texto);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
+
+:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
 
 h1 { font-size: 1.5rem; margin: 0 0 0.25rem; }
 h2 { font-size: 1rem; margin: 0 0 0.75rem; }
@@ -46,15 +77,21 @@ h2 { font-size: 1rem; margin: 0 0 0.75rem; }
 
 /* ---------- Navegación ---------- */
 .barra {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1rem;
-  background: var(--superficie);
+  gap: 1rem;
+  padding: 0.7rem 1rem;
+  background: color-mix(in srgb, var(--superficie) 85%, transparent);
+  backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--borde);
 }
 .barra a { color: var(--texto); text-decoration: none; }
-.marca { font-weight: 700; }
+.marca { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 700; }
+.marca-logo { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--acento); color: var(--acento-texto); }
 .enlaces { display: flex; gap: 1rem; }
 .enlaces a { color: var(--texto-sutil); }
 .enlaces a.activo { color: var(--acento); font-weight: 600; }
@@ -71,8 +108,11 @@ button {
   background: var(--superficie);
   color: var(--texto);
 }
+button { transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease; }
+button:hover:not(:disabled) { border-color: var(--texto-sutil); }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 button.primario { background: var(--acento); color: var(--acento-texto); border-color: transparent; font-weight: 600; }
+button.primario:hover:not(:disabled) { background: var(--acento-hover); border-color: transparent; }
 button.secundario { border-color: var(--acento); color: var(--acento); }
 
 input, select {
@@ -81,15 +121,18 @@ input, select {
   padding: 0.6rem 0.75rem;
   border-radius: 8px;
   border: 1px solid var(--borde);
-  background: var(--fondo);
+  background: var(--superficie-2);
   color: var(--texto);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
+input:focus, select:focus { outline: none; border-color: var(--acento); box-shadow: 0 0 0 3px var(--acento-suave); }
 
 .tarjeta {
   background: var(--superficie);
   border: 1px solid var(--borde);
   border-radius: var(--radio);
-  padding: 1.25rem;
+  padding: 1.5rem;
+  box-shadow: var(--sombra);
 }
 
 /* ---------- Formulario ---------- */
@@ -253,3 +296,36 @@ input, select {
 .enlaces { align-items: center; }
 .usuario { color: var(--texto-sutil); font-size: 0.9rem; max-width: 12rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 600px) { .usuario { display: none; } }
+
+/* ---------- Selector de tema ---------- */
+.selector-tema {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--superficie-2);
+}
+.selector-tema button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--texto-sutil);
+}
+.selector-tema button:hover:not(:disabled) { color: var(--texto); }
+.selector-tema button[aria-pressed="true"] { background: var(--superficie); color: var(--acento); box-shadow: 0 1px 2px rgb(0 0 0 / 0.15); }
+.selector-tema svg { width: 16px; height: 16px; }
+
+.acceso { position: relative; }
+.acceso-tema { position: absolute; top: 1rem; right: 1rem; }
+.acceso .marca { margin-bottom: 0.5rem; }
+
+@media (max-width: 520px) {
+  .barra { flex-wrap: wrap; row-gap: 0.5rem; }
+  .enlaces { width: 100%; justify-content: space-between; gap: 0.5rem; }
+}

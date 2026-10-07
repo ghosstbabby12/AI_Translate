@@ -1,7 +1,9 @@
 import { useAuth } from "./auth";
 import { FormularioNuevo } from "./components/FormularioNuevo";
 import { Historial } from "./components/Historial";
+import { Logo } from "./components/Logo";
 import { PantallaAcceso } from "./components/PantallaAcceso";
+import { SelectorTema } from "./components/SelectorTema";
 import { VistaVideo } from "./components/VistaVideo";
 import { useRuta } from "./hooks/useRuta";
 
@@ -16,6 +18,7 @@ export function App() {
     <>
       <nav className="barra">
         <a href="#/" className="marca">
+          <Logo />
           Traductor de Video
         </a>
         <div className="enlaces">
@@ -25,6 +28,7 @@ export function App() {
           <a href="#/historial" className={ruta.vista === "historial" ? "activo" : ""}>
             Historial
           </a>
+          <SelectorTema />
           <span className="usuario" title={usuario.email}>
             {usuario.nombre}
           </span>

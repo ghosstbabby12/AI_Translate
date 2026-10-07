@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useAuth } from "../auth";
+import { Logo } from "./Logo";
+import { SelectorTema } from "./SelectorTema";
 
 type Modo = "login" | "registro";
 
@@ -35,8 +37,15 @@ export function PantallaAcceso() {
 
   return (
     <main className="acceso">
+      <div className="acceso-tema">
+        <SelectorTema />
+      </div>
       <form className="tarjeta formulario" onSubmit={enviar}>
         <div>
+          <span className="marca">
+            <Logo />
+            Traductor de Video
+          </span>
           <h1>{esRegistro ? "Crear cuenta" : "Iniciar sesión"}</h1>
           <p className="sutil">
             Traduce videos con subtítulos generados por IA y guarda tu historial.
