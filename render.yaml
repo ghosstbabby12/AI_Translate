@@ -18,8 +18,8 @@ services:
     plan: free
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    # Migraciones al arrancar (el pre-deploy de Render no está en el plan gratuito)
-    dockerCommand: sh -c "node dist/db/migrate.js && node dist/server.js"
+    # Sin dockerCommand: se usa el CMD del Dockerfile (migraciones + API). Render
+    # no pasa dockerCommand por una shell, así que "sh -c '...'" no funciona ahí.
     healthCheckPath: /salud
     buildFilter:
       paths: ["backend/**"]

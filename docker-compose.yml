@@ -38,7 +38,6 @@ services:
 
   api:
     build: ./backend
-    command: sh -c "node dist/db/migrate.js && node dist/server.js"
     env_file: ./backend/.env
     environment: &entorno_docker
       DATABASE_URL: postgres://traductor:traductor@postgres:5432/traductor
